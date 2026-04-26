@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "Room": {
+      "title": "Room",
+      "description": "A collaborative AR session session",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastUpdated": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["name", "createdAt", "ownerId"]
+    },
+    "PlacedItem": {
+      "title": "PlacedItem",
+      "description": "A piece of furniture in the scene",
+      "type": "object",
+      "properties": {
+        "itemId": { "type": "string" },
+        "instanceId": { "type": "string" },
+        "position": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" }
+          }
+        },
+        "rotation": { "type": "number" },
+        "dimensions": {
+          "type": "object",
+          "properties": {
+            "width": { "type": "number" },
+            "height": { "type": "number" },
+            "depth": { "type": "number" }
+          }
+        },
+        "color": { "type": "string" },
+        "modelUrl": { "type": "string" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["furnitureId", "instanceId", "position", "rotation", "dimensions"]
+    }
+  },
+  "firestore": {
+    "/rooms/{roomId}": {
+      "schema": "Room",
+      "description": "Root room document"
+    },
+    "/rooms/{roomId}/items/{itemId}": {
+      "schema": "PlacedItem",
+      "description": "Items within a specific room"
+    }
+  }
+}

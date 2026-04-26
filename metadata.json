@@ -1,0 +1,6 @@
+{
+  "name": "Just the Wright Interiors",
+  "description": "Premium AR furniture visualization and interior design app featuring realistic rendering, style discovery quizzes, and collaborative sharing.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["AR Visualization", "Style Quiz", "Furniture Customization"]
+}

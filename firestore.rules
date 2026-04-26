@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 0.1 Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 1. Room Rules
+    match /rooms/{roomId} {
+      function isValidRoom(data) {
+        return data.keys().hasAll(['name', 'createdAt', 'ownerId']) 
+            && data.keys().size() == 4 // name, createdAt, lastUpdated, ownerId
+            && data.name is string && data.name.size() <= 100
+            && data.ownerId == request.auth.uid
+            && data.createdAt == request.time
+            && (data.lastUpdated == request.time || !('lastUpdated' in data));
+      }
+
+      allow get: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(roomId) && isValidRoom(incoming());
+      allow update: if isSignedIn() && isValidId(roomId) 
+                  && incoming().diff(existing()).affectedKeys().hasOnly(['lastUpdated', 'name'])
+                  && incoming().lastUpdated == request.time;
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+
+      // 2. Room Items Rules
+      match /items/{itemId} {
+        function isValidItem(data) {
+          return data.keys().hasAll(['itemId', 'instanceId', 'position', 'rotation', 'dimensions'])
+              && data.instanceId == itemId
+              && data.position.x is number && data.position.y is number
+              && data.rotation is number
+              && data.dimensions.width is number && data.dimensions.height is number && data.dimensions.depth is number
+              && (!('color' in data) || data.color is string)
+              && (!('modelUrl' in data) || data.modelUrl is string)
+              && (!('updatedBy' in data) || data.updatedBy == request.auth.uid);
+        }
+
+        allow list: if isSignedIn(); // Requires a room ID in the path anyway
+        allow get: if isSignedIn();
+        allow create: if isSignedIn() && isValidId(itemId) && isValidItem(incoming()) 
+                     && exists(/databases/$(database)/documents/rooms/$(roomId));
+        allow update: if isSignedIn() && isValidId(itemId) && isValidItem(incoming());
+        allow delete: if isSignedIn() && isValidId(itemId);
+      }
+    }
+  }
+}
