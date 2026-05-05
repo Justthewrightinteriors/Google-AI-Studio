@@ -1,6 +1,7 @@
-import { useRef, Suspense } from 'react';
+import { useRef, Suspense, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stage, PerspectiveCamera, Environment, Grid, ContactShadows, useGLTF } from '@react-three/drei';
+import { EffectComposer, N8AO } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { PlacedItem } from '../types';
 
@@ -37,6 +38,22 @@ function GLTFModel({ url, width, height, depth, position, rotation }: {
 }) {
   const { scene } = useGLTF(url);
   const scale: [number, number, number] = [width / 100, height / 100, depth / 100];
+
+  // enhance materials realism
+  useMemo(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        if (mesh.material) {
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.envMapIntensity = 1.2;
+          if (mat.aoMap) {
+            mat.aoMapIntensity = 1.0;
+          }
+        }
+      }
+    });
+  }, [scene]);
 
   return (
     <primitive 
@@ -119,6 +136,10 @@ export default function Furniture3D({
         <PerspectiveCamera makeDefault position={[5, 5, 5]} />
         <OrbitControls makeDefault enablePan={true} minPolarAngle={0} maxPolarAngle={Math.PI / 2.1} />
         
+        <EffectComposer>
+          <N8AO aoRadius={0.5} intensity={1.5} color="black" />
+        </EffectComposer>
+
         <Stage environment={environment} intensity={lightingIntensity} shadows="contact">
           {items ? (
             items.map((item) => (
